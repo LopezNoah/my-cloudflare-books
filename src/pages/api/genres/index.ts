@@ -1,0 +1,48 @@
+import { PrismaClient } from '@prisma/client';
+import type { APIRoute } from 'astro';
+import { prisma } from '../../../lib/prisma';
+
+export const get: APIRoute = async ({ request, locals }) => {
+
+  try {
+    const genres = await prisma.genre.findMany();
+    return new Response(JSON.stringify(genres), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    console.error("Prisma Error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to fetch genres' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
+export const post: APIRoute = async ({ request, locals }) => {
+
+  try {
+    const requestData = await request.json();
+    const { name } = requestData;
+
+    const genre = await prisma.genre.create({
+      data: {
+        name,
+      },
+    });
+    return new Response(JSON.stringify(genre), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } catch (error: any) {
+    console.error("Prisma Error:", error);
+    return new Response(JSON.stringify({ error: 'Failed to create genre', details: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  } finally {
+    await prisma.$disconnect();
+  }
+};

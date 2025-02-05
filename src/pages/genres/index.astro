@@ -1,0 +1,57 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const response = await fetch('/api/genres');
+const genres = await response.json();
+
+async function handleAddGenre(event: Event) {
+  event.preventDefault();
+  const formData = new FormData(event.target as HTMLFormElement);
+  const name = formData.get('name') as string;
+
+  const response = await fetch('/api/genres', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (response.ok) {
+    window.location.reload();
+  } else {
+    alert('Failed to add genre');
+    console.error('Error adding genre:', await response.json());
+  }
+}
+
+async function deleteGenre(id: number) {
+  if (confirm("Are you sure you want to delete this genre?")) {
+    await fetch(`/api/genres/${id}`, { method: 'DELETE' });
+    window.location.reload();
+  }
+}
+---
+
+<Layout title="Genres">
+  <main class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Manage Genres</h1>
+
+    <form onSubmit={handleAddGenre} class="mb-4 space-y-2">
+      <div>
+        <label htmlFor="genreName" class="block text-sm font-medium text-gray-700">New Genre Name</label>
+        <input type="text" id="genreName" name="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+      </div>
+      <button type="submit" class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+        Add Genre
+      </button>
+    </form>
+
+    <h2 class="text-lg font-semibold mb-2">Existing Genres</h2>
+    <ul class="list-disc list-inside">
+      {genres.map(genre => (
+        <li key={genre.id} class="flex items-center justify-between">
+          {genre.name}
+          <button onClick={() => deleteGenre(genre.id)} class="text-red-600 hover:text-red-900 ml-2">Delete</button>
+        </li>
+      ))}
+    </ul>
+  </main>
+</Layout>
