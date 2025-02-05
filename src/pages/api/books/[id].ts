@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import type { APIRoute } from 'astro';
 import { prisma } from '../../../lib/prisma';
+import { bookSchema } from '../../../schemas/books';
 
 export const get: APIRoute = async ({ params, locals }) => {
   const id = parseInt(params.id || "");
@@ -13,7 +14,15 @@ export const get: APIRoute = async ({ params, locals }) => {
   try {
     const book = await prisma.book.findUnique({
       where: { id },
-      include: { genres: true, readingSessions: true },
+      include: { authors: {
+        include: {
+          author: true // Include the Author model in BookAuthor
+        }
+      }, genres: {
+        include: {
+          genre: true // Include the Genre model in BookGenre
+        }
+      }, readingSessions: true },
     });
     if (!book) {
       return new Response(JSON.stringify({ error: 'Book not found' }), {
@@ -21,7 +30,13 @@ export const get: APIRoute = async ({ params, locals }) => {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-    return new Response(JSON.stringify(book), {
+
+    const flattenedBook = {
+      ...book,
+      authors: book.authors.map(bookAuthor => bookAuthor.author.name),
+      genres: book.genres.map(bookGenre => bookGenre.genre.name), // Flatten genres as well for consistency
+    };
+    return new Response(JSON.stringify(flattenedBook), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -46,13 +61,24 @@ export const put: APIRoute = async ({ params, request, locals }) => {
   }
   try {
     const requestData = await request.json();
-    const { title, authors, isbn, pageCount } = requestData;
+    const validatedData = bookSchema.safeParse(requestData);
+   if (!validatedData.success) {
+     return new Response(JSON.stringify({
+       errors: validatedData.error.issues
+     }), {
+       status: 400,
+       headers: { 'Content-Type': 'application/json' },
+     });
+   }
+
+
+    const { title, authors, isbn, pageCount } = validatedData.data;
 
     const updatedBook = await prisma.book.update({
       where: { id },
       data: {
         title,
-        authors,
+        // authors,
         isbn,
         pageCount,
       },

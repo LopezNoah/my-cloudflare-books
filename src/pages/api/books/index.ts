@@ -1,13 +1,31 @@
+
 import { PrismaClient } from '@prisma/client';
 import type { APIRoute } from 'astro';
 import { prisma } from '../../../lib/prisma';
+import { z } from 'astro/zod';
+import { bookSchema } from '../../../schemas/books';
 
-export const get: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
   try {
     const books = await prisma.book.findMany({
-      include: { genres: true, readingSessions: true }, // Include related data if needed
+      include: { authors: {
+        include: {
+          author: true // Include the Author model in BookAuthor
+        }
+      }, genres: {
+        include: {
+          genre: true // Include the Genre model in BookGenre
+        }
+      }, readingSessions: true }, // Include related data if needed
     });
-    return new Response(JSON.stringify(books), {
+
+    const flattenedBooks = books.map(book => ({
+      ...book,
+      authors: book.authors.map(bookAuthor => bookAuthor.author.name),
+      genres: book.genres.map(bookGenre => bookGenre.genre.name), // Flatten genres as well for consistency
+    }));
+
+    return new Response(JSON.stringify(flattenedBooks), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -22,15 +40,31 @@ export const get: APIRoute = async ({ request, locals }) => {
   }
 };
 
-export const post: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const requestData = await request.json();
-    const { title, authors, isbn, pageCount } = requestData;
+
+   const validatedData = bookSchema.safeParse(requestData);
+   if (!validatedData.success) {
+     return new Response(JSON.stringify({
+       errors: validatedData.error.issues
+     }), {
+       status: 400,
+       headers: { 'Content-Type': 'application/json' },
+     });
+   }
+    const { title, authors, isbn, pageCount } = validatedData.data;
 
     const book = await prisma.book.create({
       data: {
         title,
-        authors,
+        // authors: {
+        //   create: {
+        //     author: {
+        //       name: author
+        //     }
+        //   }
+        // }, // We'll need to handle authors differently on creation later if needed
         isbn,
         pageCount,
       },
@@ -49,11 +83,3 @@ export const post: APIRoute = async ({ request, locals }) => {
     await prisma.$disconnect();
   }
 };
-
-// export const onRequest = defineEventHandler(async (event) => {
-//   event.locals.runtime = event.context.cloudflare;
-// });
-
-// function defineEventHandler(func: any) {
-//   return func;
-// }

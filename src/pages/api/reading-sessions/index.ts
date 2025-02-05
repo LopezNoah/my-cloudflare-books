@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import type { APIRoute } from 'astro';
 import { prisma } from '../../../lib/prisma';
+import { readingSessionSchema } from '../../../schemas/books';
 
 export const get: APIRoute = async ({ request, locals }) => {
   try {
@@ -25,7 +26,17 @@ export const get: APIRoute = async ({ request, locals }) => {
 export const post: APIRoute = async ({ request, locals }) => {
   try {
     const requestData = await request.json();
-    const { bookId, startTime, duration, pageStart, pageEnd, finishedBook } = requestData;
+    const validatedData = readingSessionSchema.safeParse(requestData);
+    if (!validatedData.success) {
+      return new Response(JSON.stringify({
+        errors: validatedData.error.issues
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { bookId, startTime, duration, pageStart, pageEnd, finishedBook } = validatedData.data;
 
     const readingSession = await prisma.readingSession.create({
       data: {

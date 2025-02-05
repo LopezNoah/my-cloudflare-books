@@ -27,6 +27,6 @@ async function deleteBook(id: number) {
     <div class="mb-4">
       <a href="/books/add" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add New Book</a>
     </div>
-    <BookList books={[]} onDelete={deleteBook} client:load />
+    <BookList onDelete={deleteBook} client:load />
   </main>
 </Layout>

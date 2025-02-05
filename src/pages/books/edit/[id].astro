@@ -3,14 +3,18 @@ import Layout from '../../../layouts/Layout.astro';
 import BookForm from '../../../components/BookForm.tsx';
 import { prisma } from '../../../lib/prisma';
 
-const bookId = Astro.params.id;
-if (!bookId) return Astro.redirect('/'); // Handle missing id
+interface Props {
+  id: number;
+}
 
-const bookResponse = await fetch(`/api/books/${bookId}`);
+const { id } = Astro.props;
+if (!id) return Astro.redirect('/'); // Handle missing id
+
+// const bookResponse = await fetch(`/api/books/${id}`);
 // const book = await bookResponse.json();
 const book = await prisma.book.findFirst({
     where: {
-        id: parseInt(bookId)
+        id: id
     }
 });
 
@@ -20,7 +24,7 @@ const genres = await prisma.genre.findMany();
 
 
 async function handleUpdateBook(bookData: any) {
-  const response = await fetch(`/api/books/${bookId}`, {
+  const response = await fetch(`/api/books/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(bookData),

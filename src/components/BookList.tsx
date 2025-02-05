@@ -6,15 +6,29 @@ interface Book {
   authors: string[];
   isbn?: string;
   pageCount?: number;
-  genres: { id: number, name: string }[];
+  genres: { name: string }[];
 }
 
 interface BookListProps {
-  books: Book[];
   onDelete: (id: number) => void;
 }
 
-const BookList: React.FC<BookListProps> = ({ books, onDelete }) => {
+const BookList: React.FC<BookListProps> = ({ onDelete }) => {
+  const [books, setBooks] = React.useState<Book[]>([]);
+
+  React.useEffect(() => {
+    const fetchBooks = async () => {
+      const response = await fetch('/api/books');
+      if (response.ok) {
+        const data = await response.json();
+        setBooks(data);
+      } else {
+        console.error('Failed to fetch books');
+      }
+    };
+    fetchBooks();
+  }, []);
+
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">

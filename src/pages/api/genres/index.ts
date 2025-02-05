@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import type { APIRoute } from 'astro';
 import { prisma } from '../../../lib/prisma';
+import { genreSchema } from '../../../schemas/books';
 
 export const get: APIRoute = async ({ request, locals }) => {
 
@@ -25,7 +26,17 @@ export const post: APIRoute = async ({ request, locals }) => {
 
   try {
     const requestData = await request.json();
-    const { name } = requestData;
+    const validatedData = genreSchema.safeParse(requestData);
+   if (!validatedData.success) {
+     return new Response(JSON.stringify({
+       errors: validatedData.error.issues
+     }), {
+       status: 400,
+       headers: { 'Content-Type': 'application/json' },
+     });
+   }
+
+    const { name } = validatedData.data;
 
     const genre = await prisma.genre.create({
       data: {

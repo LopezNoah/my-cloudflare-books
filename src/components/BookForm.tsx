@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 
 interface Book {
@@ -6,32 +7,43 @@ interface Book {
   authors: string[];
   isbn?: string;
   pageCount?: number;
-//   genreIds?: number[];
+//   genreIds?: number[]; // Keeping genreIds commented out for now - flattening genres means handling is different
 }
 
 interface BookFormProps {
   initialBook: Book | null;
-  onSubmit: (book: Book) => void;
-  genres: { id: number, name: string }[];
+  
 }
 
-const BookForm: React.FC<BookFormProps> = ({ initialBook, onSubmit, genres }) => {
-  const [bookData, setBookData] = useState<Book>(
-    initialBook || { title: '', authors: [], genreIds: [] }
-  );
-  const [selectedGenreIds, setSelectedGenreIds] = useState<number[]>(initialBook?.genreIds || []);
+async function handleAddBook(bookData: any) {
+  const response = await fetch('/api/books', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(bookData),
+  });
+  if (response.ok) {
+    window.location.href = '/'; // Redirect to book list after adding
+  } else {
+    alert('Failed to add book'); // Basic error handling
+    console.error('Error adding book:', await response.json());
+  }
+}
 
-  useEffect(() => {
-    if (initialBook) {
-      setBookData(initialBook);
-      setSelectedGenreIds(initialBook.genreIds || []);
-    }
-  }, [initialBook]);
+const BookForm: React.FC<BookFormProps> = ({ initialBook }) => {
+  const [bookData, setBookData] = useState<Book>(
+   initialBook || { title: '', authors: [] } // Removed genreIds from default state
+  );
+
+   useEffect(() => {
+     if (initialBook) {
+       setBookData(initialBook);
+     }
+   }, [initialBook]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     if (name === 'authors') {
-      setBookData({ ...bookData, authors: value.split(',').map(a => a.trim()) }); // Split authors by comma
+      setBookData({ ...bookData, authors: value.split(',') }); // Split authors by comma
     } else if (name === 'pageCount') {
       setBookData({ ...bookData, pageCount: value === '' ? undefined : parseInt(value, 10) });
     } else {
@@ -39,17 +51,11 @@ const BookForm: React.FC<BookFormProps> = ({ initialBook, onSubmit, genres }) =>
     }
   };
 
-  const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => parseInt(option.value, 10));
-    setSelectedGenreIds(selectedOptions);
-    setBookData({ ...bookData, genreIds: selectedOptions });
-  };
-
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ ...bookData, genreIds: selectedGenreIds });
-  };
+    handleAddBook(bookData);
+   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
