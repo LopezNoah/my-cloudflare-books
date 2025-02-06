@@ -1,15 +1,5 @@
 import React from 'react';
-
-interface ReadingSession {
-  id: number;
-  bookId: number;
-  book: { id: number, title: string };
-  startTime: string;
-  duration: number;
-  pageStart?: number;
-  pageEnd?: number;
-  finishedBook?: boolean;
-}
+import type { ReadingSession } from '@prisma/client';
 
 interface ReadingSessionListProps {
   sessions: ReadingSession[];
@@ -22,7 +12,7 @@ const ReadingSessionList: React.FC<ReadingSessionListProps> = ({ sessions, onDel
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Book</th>
+            {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Book</th> */}
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Time</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration (min)</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pages</th>
@@ -33,7 +23,7 @@ const ReadingSessionList: React.FC<ReadingSessionListProps> = ({ sessions, onDel
         <tbody className="bg-white divide-y divide-gray-200">
           {sessions.map((session) => (
             <tr key={session.id}>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{session.book.title}</td>
+              {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{session.book.title}</td> */}
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(session.startTime).toLocaleString()}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{session.duration}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{session.pageStart}{session.pageEnd ? `-${session.pageEnd}` : ''}</td>
