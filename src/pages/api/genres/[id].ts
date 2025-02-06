@@ -3,7 +3,7 @@ import type { APIRoute } from 'astro';
 import { prisma } from '../../../lib/prisma';
 import { genreSchema } from '../../../schemas/books';
 
-export const get: APIRoute = async ({ params, locals }) => {
+export const GET: APIRoute = async ({ params, locals }) => {
   const id = parseInt(params.id || "");
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: 'Invalid genre ID' }), {
@@ -36,7 +36,7 @@ export const get: APIRoute = async ({ params, locals }) => {
   }
 };
 
-export const put: APIRoute = async ({ params, request, locals }) => {
+export const PUT: APIRoute = async ({ params, request, locals }) => {
   const id = parseInt(params.id || "");
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: 'Invalid genre ID' }), {
@@ -79,7 +79,7 @@ export const put: APIRoute = async ({ params, request, locals }) => {
   }
 };
 
-export const del: APIRoute = async ({ params, locals }) => {
+export const DELETE: APIRoute = async ({ params, locals }) => {
   const id = parseInt(params.id || "");
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: 'Invalid genre ID' }), {

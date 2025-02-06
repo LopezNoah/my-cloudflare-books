@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import type { APIRoute } from 'astro';
 import { prisma } from '../../../lib/prisma';
 import { bookSchema } from '../../../schemas/books';
 
-export const get: APIRoute = async ({ params, locals }) => {
+export const GET: APIRoute = async ({ params, locals }) => {
   const id = parseInt(params.id || "");
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: 'Invalid book ID' }), {
@@ -51,7 +51,7 @@ export const get: APIRoute = async ({ params, locals }) => {
   }
 };
 
-export const put: APIRoute = async ({ params, request, locals }) => {
+export const PUT: APIRoute = async ({ params, request, locals }) => {
   const id = parseInt(params.id || "");
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: 'Invalid book ID' }), {
@@ -72,17 +72,49 @@ export const put: APIRoute = async ({ params, request, locals }) => {
    }
 
 
-    const { title, authors, isbn, pageCount } = validatedData.data;
+    const { title, isbn, pageCount, genreIds, authorIds } = validatedData.data; // Include authorIds
+
+    const updateData: Prisma.BookUpdateInput = {
+      title,
+      isbn: isbn ?? undefined,
+      pageCount: pageCount ?? undefined,
+    };
+
+   // --- Authors ---
+    if (authorIds) {
+      updateData.authors = {
+        // 1. Delete existing associations:
+        deleteMany: {}, // Delete *all* existing BookAuthor entries for this book.
+        // 2. Create new associations:
+        createMany: {
+          data: authorIds.map((authorId) => ({ authorId })), // Create new BookAuthor entries.
+        },
+      };
+    } else {
+        updateData.authors = {
+            deleteMany: {}
+        }
+    }
+
+    // --- Genres ---
+    if (genreIds) {
+        updateData.genres = {
+            deleteMany: {},
+            createMany: {
+              data: genreIds.map((genreId) => ({ genreId })),
+            },
+        };
+    } else {
+        updateData.genres = {
+            deleteMany: {},
+        }
+    }
 
     const updatedBook = await prisma.book.update({
       where: { id },
-      data: {
-        title,
-        // authors,
-        isbn,
-        pageCount,
-      },
+      data: updateData,
     });
+
     return new Response(JSON.stringify(updatedBook), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -98,7 +130,7 @@ export const put: APIRoute = async ({ params, request, locals }) => {
   }
 };
 
-export const del: APIRoute = async ({ params, locals }) => {
+export const DELETE: APIRoute = async ({ params, locals }) => {
   const id = parseInt(params.id || "");
   if (isNaN(id)) {
     return new Response(JSON.stringify({ error: 'Invalid book ID' }), {

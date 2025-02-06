@@ -3,7 +3,7 @@ import type { APIRoute } from 'astro';
 import { prisma } from '../../../lib/prisma';
 import { genreSchema } from '../../../schemas/books';
 
-export const get: APIRoute = async ({ request, locals }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
 
   try {
     const genres = await prisma.genre.findMany();
@@ -22,7 +22,7 @@ export const get: APIRoute = async ({ request, locals }) => {
   }
 };
 
-export const post: APIRoute = async ({ request, locals }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     const requestData = await request.json();

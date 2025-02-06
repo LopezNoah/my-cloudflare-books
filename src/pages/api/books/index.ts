@@ -1,5 +1,5 @@
 
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import type { APIRoute } from 'astro';
 import { prisma } from '../../../lib/prisma';
 import { z } from 'astro/zod';
@@ -40,46 +40,56 @@ export const GET: APIRoute = async ({ request, locals }) => {
   }
 };
 
-export const POST: APIRoute = async ({ request, locals }) => {
-  try {
-    const requestData = await request.json();
 
-   const validatedData = bookSchema.safeParse(requestData);
-   if (!validatedData.success) {
-     return new Response(JSON.stringify({
-       errors: validatedData.error.issues
-     }), {
-       status: 400,
-       headers: { 'Content-Type': 'application/json' },
-     });
-   }
-    const { title, authors, isbn, pageCount } = validatedData.data;
+export const POST: APIRoute = async ({ request }) => {
+    try {
+        const requestData = await request.json();
+        const validatedData = bookSchema.safeParse(requestData);
 
-    const book = await prisma.book.create({
-      data: {
-        title,
-        // authors: {
-        //   create: {
-        //     author: {
-        //       name: author
-        //     }
-        //   }
-        // }, // We'll need to handle authors differently on creation later if needed
-        isbn,
-        pageCount,
-      },
-    });
-    return new Response(JSON.stringify(book), {
-      status: 201,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error: any) {
-    console.error("Prisma Error:", error);
-    return new Response(JSON.stringify({ error: 'Failed to create book', details: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } finally {
-    await prisma.$disconnect();
-  }
+        if (!validatedData.success) {
+            return new Response(JSON.stringify({
+                errors: validatedData.error.issues
+            }), {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
+        const { title, isbn, pageCount, genreIds, authorIds } = validatedData.data; // Include authorIds
+
+        const createData: Prisma.BookCreateInput = {
+          title,
+          isbn: isbn ?? undefined,
+          pageCount: pageCount ?? undefined,
+        };
+
+        if (genreIds) {
+          createData.genres = {
+            connect: genreIds.map((id) => ({ id })),
+          };
+        }
+
+        if (authorIds) {
+          createData.authors = {
+            connect: authorIds.map((id) => ({ id })), // Connect authors
+          };
+        }
+
+        const newBook = await prisma.book.create({
+            data: createData,
+        });
+
+        return new Response(JSON.stringify(newBook), {
+            status: 201,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    } catch (error: any) {
+        console.error("Prisma Error:", error);
+        return new Response(JSON.stringify({ error: 'Failed to create book', details: error.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    } finally {
+        await prisma.$disconnect();
+    }
 };
