@@ -3,44 +3,33 @@ import Layout from '../../../layouts/Layout.astro';
 import BookForm from '../../../components/BookForm.tsx';
 import { prisma } from '../../../lib/prisma';
 
-interface Props {
-  id: number;
-}
+// interface Props {
+//   id: number;
+// }
 
-const { id } = Astro.props;
+const { id } = Astro.params;
+console.log(id);
+console.log(Astro.params);
 if (!id) return Astro.redirect('/'); // Handle missing id
 
 // const bookResponse = await fetch(`/api/books/${id}`);
 // const book = await bookResponse.json();
 const book = await prisma.book.findFirst({
     where: {
-        id: id
+        id: parseInt(id)
     }
 });
+if (book === null) return Astro.redirect('/');
 
-const genresResponse = await fetch('/api/genres');
+// const genresResponse = await fetch('/api/genres');
 // const genres = await genresResponse.json();
 const genres = await prisma.genre.findMany();
 
-
-async function handleUpdateBook(bookData: any) {
-  const response = await fetch(`/api/books/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(bookData),
-  });
-  if (response.ok) {
-    window.location.href = '/'; // Redirect to book list after updating
-  } else {
-    alert('Failed to update book');
-    console.error('Error updating book:', await response.json());
-  }
-}
 ---
 
 <Layout title={`Edit Book: ${book?.title}`}>
   <main class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4">Edit Book: {book?.title}</h1>
-    <BookForm initialBook={book} genres={genres} onSubmit={handleUpdateBook} />
+    <BookForm initialBook={book} genres={genres}  client:load />
   </main>
 </Layout>

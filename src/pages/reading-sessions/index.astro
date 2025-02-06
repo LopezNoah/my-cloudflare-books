@@ -1,9 +1,11 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ReadingSessionList from '../../components/ReadingSessionList.tsx';
+import { prisma } from '../../lib/prisma';
 
-const response = await fetch('/api/reading-sessions');
-const sessions = await response.json();
+// const response = await fetch('/api/reading-sessions');
+// const sessions = await response.json();
+const sessions = await prisma.readingSession.findMany();
 
 async function deleteSession(id: number) {
   if (confirm("Are you sure you want to delete this reading session?")) {

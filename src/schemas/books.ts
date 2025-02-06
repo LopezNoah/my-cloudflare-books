@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
 export const bookSchema = z.object({
-  title: z.string().min(1, { message: "Title is required" }),
-  authors: z.array(z.string()).optional().default([]), // Authors is still handled as string array in form, optional for now
-  isbn: z.string().optional(),
-  pageCount: z.number().int().positive().optional(),
-});
+    title: z.string().min(1),
+    isbn: z.string().optional(),
+    pageCount: z.number().optional(),
+    genreIds: z.array(z.number()).optional(),
+    authorIds: z.array(z.number()).optional(), // Add authorIds
+  });
 
 export type BookSchemaType = z.infer<typeof bookSchema>;
 
