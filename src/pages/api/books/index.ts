@@ -19,13 +19,13 @@ export const GET: APIRoute = async ({ request, locals }) => {
       }, readingSessions: true }, // Include related data if needed
     });
 
-    const flattenedBooks = books.map(book => ({
-      ...book,
-      authors: book.authors.map(bookAuthor => bookAuthor.author.name),
-      genres: book.genres.map(bookGenre => bookGenre.genre.name), // Flatten genres as well for consistency
-    }));
+    // const flattenedBooks = books.map(book => ({
+    //   ...book,
+    //   authors: book.authors.map(bookAuthor => bookAuthor.author.name),
+    //   genres: book.genres.map(bookGenre => bookGenre.genre.name), // Flatten genres as well for consistency
+    // }));
 
-    return new Response(JSON.stringify(flattenedBooks), {
+    return new Response(JSON.stringify(books), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
