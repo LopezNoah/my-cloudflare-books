@@ -1,13 +1,15 @@
 import React from 'react';
+// import type { Book } from '@prisma/client';
+import type { Book } from '../schemas/books';
 
-interface Book {
-  id: number;
-  title: string;
-  authors: string[]; // This should be strings, as per the API
-  isbn?: string;
-  pageCount?: number;
-  genres: { name: string }[]; // This is also correct, matching the API.
-}
+// interface Book {
+//   id: number;
+//   title: string;
+//   authors: string[]; // This should be strings, as per the API
+//   isbn?: string;
+//   pageCount?: number;
+//   genres: { name: string }[]; // This is also correct, matching the API.
+// }
 
 // interface BookListProps {
 //   onDelete: (id: number) => void;
@@ -21,21 +23,21 @@ async function deleteBook(id: number) {
   }
 }
 
-const BookList: React.FC = () => {
-  const [books, setBooks] = React.useState<Book[]>([]);
+function BookList ({ books }: { books: Book[] }) {
+  // const [books, setBooks] = React.useState<Book[]>([]);
 
-  React.useEffect(() => {
-    const fetchBooks = async () => {
-      const response = await fetch('/api/books');
-      if (response.ok) {
-        const data = await response.json();
-        setBooks(data); // The API returns the full book data, including authors and genres.
-      } else {
-        console.error('Failed to fetch books');
-      }
-    };
-    fetchBooks();
-  }, []);
+  // React.useEffect(() => {
+  //   const fetchBooks = async () => {
+  //     const response = await fetch('/api/books');
+  //     if (response.ok) {
+  //       const data = await response.json();
+  //       setBooks(data); // The API returns the full book data, including authors and genres.
+  //     } else {
+  //       console.error('Failed to fetch books');
+  //     }
+  //   };
+  //   fetchBooks();
+  // }, []);
 
   return (
     <div className="overflow-x-auto">
@@ -52,8 +54,8 @@ const BookList: React.FC = () => {
           {books.map((book) => (
             <tr key={book.id}>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{book.title}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.authors.join(', ')}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.genres.map(g => g.name).join(', ')}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.authors.map(a => a.author.name).join(', ')}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{book.genres.map(g => g.genre.name).join(', ')}</td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                 <a href={`/books/edit/${book.id}`} className="text-indigo-600 hover:text-indigo-900">Edit</a>
                 <button onClick={() => deleteBook(book.id)} className="text-red-600 hover:text-red-900">Delete</button>
