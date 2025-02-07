@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 export const bookSchema = z.object({
@@ -9,6 +10,20 @@ export const bookSchema = z.object({
   });
 
 export type BookSchemaType = z.infer<typeof bookSchema>;
+const include = {
+    genres: {
+        include: {
+        genre: true
+      },
+    },
+    authors: {
+        include: {
+            author: true
+        }
+    }
+  };
+  
+  export type Book = Prisma.BookGetPayload<{include: typeof include}>;
 
 export const genreSchema = z.object({
     name: z.string().min(1, { message: "Genre name is required" }),
