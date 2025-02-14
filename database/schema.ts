@@ -77,7 +77,12 @@ export const readingSessions = sqliteTable("ReadingSession", {
 
 export const bookRelations = relations(books, ({ one, many }) => ({
   bookAuthor: many(bookAuthors),
-  bookGenre: many(bookGenres)
+  bookGenre: many(bookGenres),
+  readingSessions: many(readingSessions)
+}));
+
+export const readingSessionsRelations = relations(readingSessions, ({ one }) => ({
+  book: one(books)
 }));
 
 export const authorRelations = relations(authors, ({ one, many }) => ({
