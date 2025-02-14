@@ -6,7 +6,7 @@ export default [
         route(":id", "routes/books.$id.tsx", [
             route("edit", "routes/books.$id.edit.tsx")
         ]),
-        route("add", "routes/books/add.tsx"),
+        route("add", "routes/books/add/index.tsx"),
     ]),
     route("reading-sessions", "routes/reading-sessions.tsx", [
         route(":id", "routes/reading-sessions.$id.tsx", [
