@@ -1,181 +1,99 @@
-// src/routes/books/$id.edit.tsx
-import type { Route } from './+types/books.$id.edit';
-import { Form, Link, redirect } from 'react-router';
-import * as schema from "../../database/schema";
-import { eq, inArray } from 'drizzle-orm';
+import type { Route } from "./+types/books.$id.edit";
+import { redirect, Form, useLocation } from "react-router";
+import { BookService, updateBookSchema } from "~/lib/BookService";
+import type { UpdateBookData } from "~/lib/BookService";
+import { InputField } from "~/components/InputField";
+import { z } from "zod";
+import { BookEditForm } from "~/components/BookEditForm";
+import { useState } from "react";
 
-export async function loader ({ params, context }: Route.LoaderArgs) {
-    const bookId = parseInt(params.id || "0");
+export async function loader({ params, context }: Route.LoaderArgs) {
+  const bookId = parseInt(params.id || "0");
 
-    if (isNaN(bookId)) {
-        throw new Response("Invalid Book ID", { status: 400 });
-    }
+  if (isNaN(bookId)) {
+    throw new Response("Invalid Book ID", { status: 400 });
+  }
 
-    const book = await context.db.query.books.findFirst({
-        where: eq(schema.books.id, bookId),
-        with: {
-            bookAuthor: {
-                with: { author: true }
-            },
-            bookGenre: {
-                with: { genre: true }
-            }
-        }
+  const bookService = new BookService(context.db);
+  const book = await bookService.getBookWithRelations(bookId);
+  if (!book) {
+    throw new Response("Book not found", { status: 404 });
+  }
+  return { book };
+}
+
+export async function action({ params, request, context }: Route.ActionArgs) {
+  const bookId = parseInt(params.id || "0");
+  if (isNaN(bookId)) {
+    throw new Response("Invalid Book ID", { status: 400 });
+  }
+
+  const formData = await request.formData();
+  const bookService = new BookService(context.db);
+
+  try {
+    const pageCountString = formData.get("pageCount") as string;
+    const pageCountNumber = parseInt(pageCountString, 10);
+    const genres = formData.getAll("genres") as string[];
+    const authors = formData.getAll("authors") as string[];
+    const data = updateBookSchema.parse({
+      title: formData.get("title"),
+      pageCount: pageCountNumber,
+      genres: genres,
+      authors: authors,
     });
-
-    if (!book) {
-        throw new Response("Book not found", { status: 404 });
+    await bookService.updateBook(bookId, data);
+    return redirect(`/books/${bookId}`); // Redirect back to detail page
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      const errors = error.issues.reduce((acc, issue) => {
+        const path = issue.path.join(".");
+        acc[path] = issue.message;
+        return acc;
+      }, {} as Record<string, string>);
+      return { errors };
     }
+    return { errors: { general: "An unexpected error occurred." } };
+  }
+}
 
-    // Fetch all authors and genres for the dropdowns:
-    const allAuthors = await context.db.select().from(schema.authors);
-    const allGenres = await context.db.select().from(schema.genres);
+export default function BookEditPage({
+  loaderData,
+  actionData,
+}: Route.ComponentProps) {
+  const { book } = loaderData;
+  const initialFormData: UpdateBookData = {
+    title: book.title,
+    pageCount: book.pageCount || 0,
+    genres: book.bookGenre.map((g) => g.genre.name),
+    authors: book.bookAuthor.map((a) => a.author.name),
+  };
+  const [editFormData, setEditFormData] =
+    useState<UpdateBookData>(initialFormData);
 
-
-    return { book, allAuthors, allGenres };
-};
-
-export async function action ({ params, context, request}: Route.ActionArgs) {
-    const formData = await request.formData();
-    const bookId = parseInt(params.id || "0");
-
-    if (isNaN(bookId)) {
-      throw new Response("Invalid Book ID", { status: 400 });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    if (name === "genres" || name === "authors") {
+      // Split the comma-separated string into an array
+      const values = value
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean); // Remove whitespace and empty strings
+      setEditFormData((prev) => ({ ...prev, [name]: values }));
+    } else {
+      setEditFormData((prev) => ({
+        ...prev,
+        [name]: name === "pageCount" ? parseInt(value) : value, // Parse pageCount to number
+      }));
     }
+  };
 
-    // Extract data from the form.  Use .getAll() for multi-selects.
-    const title = formData.get("title")?.toString();
-    const pageCount = parseInt(formData.get("pageCount")?.toString() || "0");  // Default to 0 if null/undefined
-    // const authorIds = formData.getAll("authors").map(Number);  // Get all selected author IDs, convert to numbers
-    // const genreIds = formData.getAll("genres").map(Number);    // Get all selected genre IDs, convert to numbers
-
-    // --- Validation ---
-    if (!title || title.trim().length === 0) {
-      return { errors: { title: "Title is required" } };
-    }
-    if (isNaN(pageCount) || pageCount <= 0) {
-      return { errors: { pageCount: "Page count must be a positive number" } };
-    }
-    // if (authorIds.length === 0) {
-    //   return { errors: { authors: "At least one author must be selected" } };
-    // }
-    // if (genreIds.length === 0) {
-    //   return { errors: { genres: "At least one genre must be selected" } };
-    // }
-
-
-    // --- Database Update ---
-    try {
-        await context.db.update(schema.books)
-            .set({ title, pageCount })
-            .where(eq(schema.books.id, bookId));
-
-          // 2. Update authors (bookAuthor table)
-          //  - Delete existing associations
-        //   await tx.delete(schema.bookAuthors).where(eq(schema.bookAuthors.bookId, bookId));
-        //   //  - Insert new associations
-        //     for (const authorId of authorIds) {
-        //         await tx.insert(schema.bookAuthors).values({ bookId, authorId });
-        //     }
-            
-
-        //   // 3. Update genres (bookGenre table) - Similar to authors
-        //   await tx.delete(schema.bookGenres).where(eq(schema.bookGenres.bookId, bookId));
-        //   for (const genreId of genreIds) {
-        //     await tx.insert(schema.bookGenres).values({ bookId, genreId });
-        //   }
-    } catch (error) {
-        console.error("Error updating book:", error);
-        return {
-            errors: { general: "Failed to update book.  Please try again." },
-        };
-    }
-
-    return redirect(`/books/${bookId}`); // Redirect back to the book detail page
-};
-
-// interface LoaderData {
-//     book: Awaited<ReturnType<typeof loader>>['book'];
-//     allAuthors: Awaited<ReturnType<typeof loader>>['allAuthors'];
-//     allGenres: Awaited<ReturnType<typeof loader>>['allGenres']
-// }
-
-export default function EditBookPage({ loaderData }: Route.ComponentProps) {
-    const { book, allAuthors, allGenres } = loaderData;
-    const currentAuthorIds = book.bookAuthor.map((ba) => ba.authorId);
-    const currentGenreIds = book.bookGenre.map((bg) => bg.genreId);
-
-    return (
-        <div>
-            <h1>Edit Book: {book.title}</h1>
-
-            <Form method="post" className="space-y-4">
-                <div>
-                    <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title:</label>
-                    <input
-                        type="text"
-                        id="title"
-                        name="title"
-                        defaultValue={book.title}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label htmlFor="pageCount" className="block text-sm font-medium text-gray-700">Page Count:</label>
-                    <input
-                        type="number"
-                        id="pageCount"
-                        name="pageCount"
-                        defaultValue={book.pageCount ?? 0}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        required
-                        min="1"
-                    />
-                </div>
-
-                {/* <div>
-                    <label htmlFor="authors" className="block text-sm font-medium text-gray-700">Authors:</label>
-                    <select
-                        id="authors"
-                        name="authors"
-                        multiple
-                        defaultValue={currentAuthorIds}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        required
-                    >
-                        {allAuthors.map((author) => (
-                            <option key={author.id} value={author.id}>
-                                {author.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                <div>
-                    <label htmlFor="genres" className="block text-sm font-medium text-gray-700">Genres:</label>
-                    <select
-                        id="genres"
-                        name="genres"
-                        multiple
-                        defaultValue={currentGenreIds}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                        required
-                    >
-                        {allGenres.map((genre) => (
-                            <option key={genre.id} value={genre.id}>
-                                {genre.name}
-                            </option>
-                        ))}
-                    </select>
-                </div> */}
-
-                <button type="submit" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                    Save Changes
-                </button>
-                <Link to={`/books/${book.id}`} className="ml-4 text-blue-500 hover:underline">Cancel</Link>
-            </Form>
-        </div>
-    );
+  return (
+    <BookEditForm
+      book={book}
+      actionData={actionData}
+      handleInputChange={handleInputChange}
+      editFormData={editFormData}
+    />
+  );
 }

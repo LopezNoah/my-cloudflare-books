@@ -1,8 +1,7 @@
 // src/routes/reading-sessions/index.tsx
 import { Link } from 'react-router';
 import type { Route } from './+types/reading-sessions'; //  generated type
-import * as schema from "../../database/schema";
-// import { generateLoader } from "@react-router/dev/server";
+import * as schema from "~/database/schema";
 import { asc, desc } from 'drizzle-orm';
 
 export async function loader ({ params, context }: Route.LoaderArgs) {
