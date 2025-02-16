@@ -1,4 +1,3 @@
-
 import {
   sqliteTable,
   integer,
@@ -26,41 +25,25 @@ export const authors = sqliteTable("Author", {
   name: text("name").notNull(),
 });
 
-export const bookGenres = sqliteTable(
-  "BookGenre",
-  {
-    id: integer("id").primaryKey({autoIncrement: true}),
-    bookId: integer("bookId")
-      .notNull()
-      .references(() => books.id),
-    genreId: integer("genreId")
-      .notNull()
-      .references(() => genres.id),
-  },
-  // (table) => [
-  //   compoundKey: primaryKey(table.bookId, table.genreId),
-  //   bookIdIdx: index("book_id_idx").on(table.bookId),  // Add indexes
-  //   genreIdIdx: index("genre_id_idx").on(table.genreId), // Add indexes
-  // ]
-);
+export const bookGenres = sqliteTable("BookGenre", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  bookId: integer("bookId")
+    .notNull()
+    .references(() => books.id),
+  genreId: integer("genreId")
+    .notNull()
+    .references(() => genres.id),
+});
 
-export const bookAuthors = sqliteTable(
-  "BookAuthor",
-  {
-     id: integer("id").primaryKey({autoIncrement: true}),
-    bookId: integer("bookId")
-      .notNull()
-      .references(() => books.id),
-    authorId: integer("authorId")
-      .notNull()
-      .references(() => authors.id),
-  },
-  // (t) => ({
-  //   compoundKey: primaryKey(t.bookId, t.authorId),
-  //   bookIdIdx: index("book_id_idx").on(t.bookId),
-  //   authorIdIdx: index("author_id_idx").on(t.authorId),
-  // })
-);
+export const bookAuthors = sqliteTable("BookAuthor", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  bookId: integer("bookId")
+    .notNull()
+    .references(() => books.id),
+  authorId: integer("authorId")
+    .notNull()
+    .references(() => authors.id),
+});
 
 export const readingSessions = sqliteTable("ReadingSession", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -72,25 +55,27 @@ export const readingSessions = sqliteTable("ReadingSession", {
   pageStart: integer("pageStart"),
   pageEnd: integer("pageEnd"),
   finishedBook: integer("finishedBook", { mode: "boolean" }).default(false),
-  // bookIdIdx: index("book_id_idx").on(books.id), //Good practice to index FKs
 });
 
 export const bookRelations = relations(books, ({ one, many }) => ({
   bookAuthor: many(bookAuthors),
   bookGenre: many(bookGenres),
-  readingSessions: many(readingSessions)
+  readingSessions: many(readingSessions),
 }));
 
-export const readingSessionsRelations = relations(readingSessions, ({ one }) => ({
-  book: one(books)
-}));
+export const readingSessionsRelations = relations(
+  readingSessions,
+  ({ one }) => ({
+    book: one(books),
+  })
+);
 
 export const authorRelations = relations(authors, ({ one, many }) => ({
   bookAuthor: many(bookAuthors),
 }));
 
 export const genreRelations = relations(genres, ({ one, many }) => ({
-  bookGenre: many(bookGenres)
+  bookGenre: many(bookGenres),
 }));
 
 export const booksToGenreRelations = relations(bookGenres, ({ one }) => ({
