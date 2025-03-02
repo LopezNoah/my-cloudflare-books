@@ -92,9 +92,11 @@ function BookDetailHeader({ book }: { book: BookWithRelations }) {
           {book.title}
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          <strong>Authors:</strong> Authors Coming Soon...
+          <strong>Authors:</strong>
+          {book.bookAuthor.map((ba) => ba.author.name).join(", ") ||
+            "No author(s) added"}
         </p>
-        <p className="text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-gray-600 dark:text-gray-400 mt-1">
           <strong>Genres:</strong>{" "}
           {book.bookGenre.map((bg) => bg.genre.name).join(", ") ||
             "No genres added"}
@@ -162,9 +164,16 @@ function BookDetailReadingSessions({
   onOpenAddSessionModal: () => void;
   bookId: number;
 }) {
-  const sortedSessions = [...readingSessions].sort(
-    (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-  );
+  const sortedSessions = [...readingSessions].sort((a, b) => {
+    // First, compare pageEnd (higher pageEnd is more recent)
+    if (b.pageEnd !== null && a.pageEnd !== null && b.pageEnd !== a.pageEnd) {
+      return b.pageEnd - a.pageEnd;
+    }
+
+    // If pageEnd is the same, compare startTime (more recent date is later)
+    return new Date(b.startTime).getTime() - new Date(a.startTime).getTime();
+  });
+
   const mostRecentSession =
     sortedSessions.length > 0 ? sortedSessions[0] : null;
 
@@ -186,7 +195,7 @@ function BookDetailReadingSessions({
               <p>
                 Date:{" "}
                 {new Date(mostRecentSession.startTime).toLocaleDateString()},
-                Pages: {mostRecentSession.pageEnd}-{mostRecentSession.pageStart}
+                Pages: {mostRecentSession.pageStart}-{mostRecentSession.pageEnd}
                 , Read Time: {formatDuration(mostRecentSession.duration)}
               </p>
             </Link>
@@ -217,11 +226,19 @@ export default function BookDetailPage({
   const [showAddSessionModal, setShowAddSessionModal] = useState(false);
   const navigation = useNavigation();
 
-  const totalPagesRead = readingSessions.reduce((acc, session) => {
+  const totalPagesRead = readingSessions.reduce((maxPageEnd, session) => {
+    return session.pageEnd ? Math.max(maxPageEnd, session.pageEnd) : maxPageEnd;
+  }, 0);
+
+  const sessionPagesRead = readingSessions.reduce((acc, session) => {
     return (
-      acc + (session.pageEnd ? session.pageEnd - (session.pageStart || 0) : 0)
+      acc +
+      (session.pageEnd && session.pageStart
+        ? session.pageEnd - session.pageStart
+        : 0)
     );
   }, 0);
+
   const percentageRead = book.pageCount
     ? (totalPagesRead / book.pageCount) * 100
     : 0;
@@ -231,7 +248,7 @@ export default function BookDetailPage({
   );
   const pagesLeft = (book.pageCount ?? 0) - totalPagesRead;
   const pagesPerMinute =
-    totalDuration === 0 ? 0 : totalPagesRead / totalDuration;
+    totalDuration === 0 ? 0 : sessionPagesRead / totalDuration;
   const estimatedTimeToFinish =
     pagesPerMinute === 0 ? 0 : pagesLeft / pagesPerMinute;
 
