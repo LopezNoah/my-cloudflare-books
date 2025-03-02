@@ -31,6 +31,7 @@ export type AddReadingSessionData = {
   pageEnd: number;
   finishedBook: boolean;
   bookId: number;
+  // userId: string;
 };
 
 export const updateBookSchema = z.object({
@@ -216,5 +217,24 @@ export class BookService {
     }
 
     await this.db.insert(schema.readingSessions).values(result.data);
+  }
+
+  async getReadingSession(sessionId: number): Promise<ReadingSession | null> {
+    const result = await this.db
+      .select()
+      .from(schema.readingSessions)
+      .where(eq(schema.readingSessions.id, sessionId));
+
+    return result[0] ?? null;
+  }
+
+  async updateReadingSession(
+    sessionId: number,
+    data: Omit<ReadingSession, "id" | "bookId">
+  ): Promise<void> {
+    await this.db
+      .update(schema.readingSessions)
+      .set(data)
+      .where(eq(schema.readingSessions.id, sessionId));
   }
 }
