@@ -26,12 +26,10 @@ export function BookCard({ book }: BookCardProps) {
             {book.title}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-            {/* {book.bookAuthor.map((ba) => ba.author.name).join(", ")} */}
-            Authors Coming Soon...
+            {book.bookAuthor.map((ba) => ba.author.name).join(", ")}
           </p>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">
-            {/* {book.bookGenre.map((bg) => bg.genre.name).join(", ")} */}
-            Genres Coming Soon...
+          <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
+            {book.bookGenre.map((bg) => bg.genre.name).join(", ")}
           </p>
           {/* You can add a placeholder for the cover image here */}
           {/* <div className="mt-4 h-48 bg-gray-200 dark:bg-gray-700 rounded-md"></div>  Placeholder for cover */}
