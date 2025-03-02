@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "92fe4235-0775-4f87-943c-b5ba556d2838",
+  "id": "d3aa7214-5405-4ce9-9400-a2cf6828cab3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "Author": {
@@ -144,6 +144,73 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "BookRead": {
+      "name": "BookRead",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "bookId": {
+          "name": "bookId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "startedAt": {
+          "name": "startedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "finishedAt": {
+          "name": "finishedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "abandoned": {
+          "name": "abandoned",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "BookRead_bookId_Book_id_fk": {
+          "name": "BookRead_bookId_Book_id_fk",
+          "tableFrom": "BookRead",
+          "tableTo": "Book",
+          "columnsFrom": [
+            "bookId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "Book": {
       "name": "Book",
       "columns": {
@@ -171,6 +238,13 @@
         "pageCount": {
           "name": "pageCount",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -224,8 +298,8 @@
           "notNull": true,
           "autoincrement": true
         },
-        "bookId": {
-          "name": "bookId",
+        "bookReadId": {
+          "name": "bookReadId",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
@@ -249,33 +323,25 @@
           "name": "pageStart",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "pageEnd": {
           "name": "pageEnd",
           "type": "integer",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
-        },
-        "finishedBook": {
-          "name": "finishedBook",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "ReadingSession_bookId_Book_id_fk": {
-          "name": "ReadingSession_bookId_Book_id_fk",
+        "ReadingSession_bookReadId_BookRead_id_fk": {
+          "name": "ReadingSession_bookReadId_BookRead_id_fk",
           "tableFrom": "ReadingSession",
-          "tableTo": "Book",
+          "tableTo": "BookRead",
           "columnsFrom": [
-            "bookId"
+            "bookReadId"
           ],
           "columnsTo": [
             "id"
@@ -284,6 +350,73 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "UserSubscription": {
+      "name": "UserSubscription",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stripeSubscriptionId": {
+          "name": "stripeSubscriptionId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "plan": {
+          "name": "plan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currentPeriodStart": {
+          "name": "currentPeriodStart",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "currentPeriodEnd": {
+          "name": "currentPeriodEnd",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "booksReadThisPeriod": {
+          "name": "booksReadThisPeriod",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

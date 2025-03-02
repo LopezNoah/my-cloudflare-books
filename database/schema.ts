@@ -2,17 +2,16 @@ import {
   sqliteTable,
   integer,
   text,
-  // primaryKey,
-  // index,
+  primaryKey,
 } from "drizzle-orm/sqlite-core";
 import { relations } from "drizzle-orm";
-// import { sql } from "drizzle-orm";
 
 export const books = sqliteTable("Book", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),
   isbn: text("isbn"),
-  pageCount: integer("pageCount"),
+  pageCount: integer("pageCount").notNull(),
+  userId: text("userId"), // Keep userId for potential future use with Clerk
 });
 
 export const genres = sqliteTable("Genre", {
@@ -45,36 +44,69 @@ export const bookAuthors = sqliteTable("BookAuthor", {
     .references(() => authors.id),
 });
 
-export const readingSessions = sqliteTable("ReadingSession", {
+export const bookReads = sqliteTable("BookRead", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   bookId: integer("bookId")
     .notNull()
     .references(() => books.id),
-  startTime: text("startTime").notNull(), // Store as ISO string
-  duration: integer("duration").notNull(),
-  pageStart: integer("pageStart"),
-  pageEnd: integer("pageEnd"),
-  finishedBook: integer("finishedBook", { mode: "boolean" }).default(false),
+  userId: text("userId").notNull(), // Associate the read with a user
+  startedAt: text("startedAt").notNull(), // ISO string
+  finishedAt: text("finishedAt"), // ISO string, NULL if not finished
+  abandoned: integer("abandoned", { mode: "boolean" }).default(false),
 });
 
-export const bookRelations = relations(books, ({ one, many }) => ({
+export const readingSessions = sqliteTable("ReadingSession", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  bookReadId: integer("bookReadId") // Link to BookRead, not directly to Book
+    .notNull()
+    .references(() => bookReads.id),
+  startTime: text("startTime").notNull(), // Store as ISO string
+  duration: integer("duration").notNull(),
+  pageStart: integer("pageStart").notNull(),
+  pageEnd: integer("pageEnd").notNull(),
+});
+
+export const userSubscriptions = sqliteTable("UserSubscription", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("userId").notNull(),
+  stripeSubscriptionId: text("stripeSubscriptionId").notNull(), // Store the Stripe subscription ID
+  plan: text("plan").notNull(), // e.g., "basic", "premium"  -  Corresponds to a Stripe Price ID.
+  currentPeriodStart: text("currentPeriodStart").notNull(), // ISO string
+  currentPeriodEnd: text("currentPeriodEnd").notNull(), // ISO string
+  booksReadThisPeriod: integer("booksReadThisPeriod").notNull().default(0), // Counter for the current period
+  status: text("status").notNull(), // e.g., 'active', 'canceled', 'incomplete', 'past_due'. See: https://stripe.com/docs/api/subscriptions/object#subscription_object-status
+});
+
+export const bookRelations = relations(books, ({ many }) => ({
   bookAuthor: many(bookAuthors),
   bookGenre: many(bookGenres),
-  readingSessions: many(readingSessions),
+  bookReads: many(bookReads), // Relation to BookRead
+}));
+
+export const bookReadRelations = relations(bookReads, ({ many, one }) => ({
+  book: one(books, {
+    fields: [bookReads.bookId],
+    references: [books.id],
+  }),
+  readingSessions: many(readingSessions), // Sessions belong to a BookRead
 }));
 
 export const readingSessionsRelations = relations(
   readingSessions,
   ({ one }) => ({
-    book: one(books),
+    bookRead: one(bookReads, {
+      // Relation to BookRead
+      fields: [readingSessions.bookReadId],
+      references: [bookReads.id],
+    }),
   })
 );
 
-export const authorRelations = relations(authors, ({ one, many }) => ({
+export const authorRelations = relations(authors, ({ many }) => ({
   bookAuthor: many(bookAuthors),
 }));
 
-export const genreRelations = relations(genres, ({ one, many }) => ({
+export const genreRelations = relations(genres, ({ many }) => ({
   bookGenre: many(bookGenres),
 }));
 
@@ -100,7 +132,14 @@ export const booksToAuthorRelations = relations(bookAuthors, ({ one }) => ({
   }),
 }));
 
-// Type helpers for better type safety
+export const userSubscriptionRelations = relations(
+  userSubscriptions,
+  ({ one }) => ({
+    //  Potentially add a relation to a User table if you create one later
+  })
+);
+
+// Type helpers
 export type Book = typeof books.$inferSelect;
 export type NewBook = typeof books.$inferInsert;
 export type Genre = typeof genres.$inferSelect;
@@ -113,3 +152,7 @@ export type BookGenre = typeof bookGenres.$inferSelect;
 export type NewBookGenre = typeof bookGenres.$inferInsert;
 export type BookAuthor = typeof bookAuthors.$inferSelect;
 export type NewBookAuthor = typeof bookAuthors.$inferInsert;
+export type BookRead = typeof bookReads.$inferSelect;
+export type NewBookRead = typeof bookReads.$inferInsert;
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type NewUserSubscription = typeof userSubscriptions.$inferInsert;
