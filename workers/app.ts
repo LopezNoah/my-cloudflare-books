@@ -1,6 +1,12 @@
 import { getLoadContext } from "load-context";
 import { createRequestHandler } from "react-router";
 
+declare global {
+  interface CloudflareEnvironment extends Env {
+    db: D1Database;
+  }
+}
+
 const requestHandler = createRequestHandler(
   // @ts-expect-error - virtual module provided by React Router at build time
   () => import("virtual:react-router/server-build"),

@@ -10,4 +10,6 @@ VALUE_FROM_CLOUDFLARE = "Hello from Cloudflare"
 
 [[d1_databases]]
 binding = "DB"
+database_name = "books-db"
+database_id = "17041162-5aaa-4569-91c0-9af97c4a2017"
 migrations_dir = "drizzle"

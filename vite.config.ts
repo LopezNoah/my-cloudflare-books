@@ -1,9 +1,10 @@
+import tailwindcss from "@tailwindcss/vite";
+import { getLoadContext } from "./load-context";
+import { reactRouterDevTools } from "react-router-devtools";
 import { reactRouter } from "@react-router/dev/vite";
 import { cloudflareDevProxy } from "@react-router/dev/vite/cloudflare";
-import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
-import { getLoadContext } from "./load-context";
 
 export default defineConfig(({ isSsrBuild }) => ({
   build: {
@@ -13,29 +14,29 @@ export default defineConfig(({ isSsrBuild }) => ({
         }
       : undefined,
   },
-  ssr: {
-    target: "webworker",
-    noExternal: true,
-    resolve: {
-      conditions: ["workerd", "browser"],
-    },
-    optimizeDeps: {
-      include: [
-        "react",
-        "react/jsx-runtime",
-        "react/jsx-dev-runtime",
-        "react-dom",
-        "react-dom/server",
-        "react-router",
-      ],
-    },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+      "react-dom",
+      "react-dom/server",
+      "react-router",
+      "snakecase-keys",
+      "cookie",
+      "beautify",
+      "react-diff-viewer-continued",
+      "classnames",
+      "@bkrem/react-transition-group",
+    ],
   },
   plugins: [
     cloudflareDevProxy({
       getLoadContext,
     }),
-    tailwindcss(),
+    reactRouterDevTools(),
     reactRouter(),
+    tailwindcss(),
     tsconfigPaths(),
   ],
 }));

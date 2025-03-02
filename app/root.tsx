@@ -14,6 +14,14 @@ import "./app.css";
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { rootAuthLoader } from "@clerk/react-router/ssr.server";
+import {
+  ClerkProvider,
+  SignedOut,
+  SignInButton,
+  SignedIn,
+  UserButton,
+} from "@clerk/react-router";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -45,10 +53,34 @@ export function Layout({ children }: { children: React.ReactNode }) {
     </html>
   );
 }
-
-export default function App({ loaderData }: Route.ComponentProps) {
-  return <Outlet />;
+export async function loader(args: Route.LoaderArgs) {
+  return rootAuthLoader(args);
 }
+export default function App({ loaderData }: Route.ComponentProps) {
+  return (
+    <ClerkProvider
+      loaderData={loaderData}
+      signUpFallbackRedirectUrl="/"
+      signInFallbackRedirectUrl="/"
+    >
+      <header className="flex items-center justify-center py-8 px-4">
+        <SignedOut>
+          <SignInButton />
+        </SignedOut>
+        <SignedIn>
+          <UserButton />
+        </SignedIn>
+      </header>
+      <main>
+        <Outlet />
+      </main>
+    </ClerkProvider>
+  );
+}
+
+// export default function App({ loaderData }: Route.ComponentProps) {
+//   return <Outlet />;
+// }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!";
