@@ -22,6 +22,7 @@ export type UpdateBookData = {
   pageCount: number;
   genres: string[];
   authors: string[];
+  userId: string;
 };
 
 export type AddReadingSessionData = {
@@ -46,6 +47,7 @@ export const updateBookSchema = z.object({
   authors: z.array(
     z.string().min(1, { message: "Author name cannot be empty" })
   ),
+  userId: z.string(),
 });
 
 export const addReadingSessionSchema = z.object({
@@ -200,6 +202,7 @@ export class BookService {
       .values({
         title: result.data.title,
         pageCount: result.data.pageCount,
+        userId: result.data.userId,
       })
       .returning({ insertedId: schema.books.id });
     if (!newBook) throw new Error("Failed to insert book");
