@@ -1,40 +1,92 @@
-// src/routes/books/index.tsx
-import { Link, Outlet } from "react-router"; //  use `Link`
+import { data, Link, Outlet } from "react-router"; //  use `Link`
 import type { Route } from "./+types/books"; // Import the generated type
-import { BookCard } from "~/components/BookCard";
-import { QueryClient, useQuery } from "@tanstack/react-query";
-import type {
-  Author,
-  Book,
-  BookAuthor,
-  BookGenre,
-  Genre,
+import { BookCard } from "~/components/book-card";
+import {
+  authors,
+  bookAuthors,
+  bookGenres,
+  bookReads,
+  books,
+  genres,
 } from "~/database/schema";
+import { getAuth } from "@clerk/react-router/ssr.server";
+import { eq, sql } from "drizzle-orm";
+import { z } from "zod";
 
-type BookWithRelations = Book & {
-  bookAuthor: (BookAuthor & { author: Author })[];
-  bookGenre: (BookGenre & { genre: Genre })[];
-};
+const genreSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+});
 
-export async function loader({ context }: Route.LoaderArgs) {
-  const books: BookWithRelations[] = await context.db.query.books.findMany({
-    with: {
-      bookAuthor: {
-        // Fetch related BookAuthor entries
-        with: {
-          author: true, // Fetch the Author related to each BookAuthor
-        },
-      },
-      bookGenre: {
-        // Fetch related BookGenre entries
-        with: {
-          genre: true, // Fetch the Genre related to each BookGenre
-        },
-      },
-    },
-  });
+// Zod schema for a single Author
+const authorSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+});
 
-  return { books };
+const bookWithRelationsSchema = z.object({
+  id: z.number(),
+  title: z.string(),
+  isbn: z.string().nullable(),
+  pageCount: z.number(),
+  genres: z.array(genreSchema), // Array of Genre objects
+  authors: z.array(authorSchema), // Array of Author objects
+  readCount: z.number(), // Count of BookReads
+});
+
+const bookWithRelationsArraySchema = z.array(bookWithRelationsSchema);
+
+type BookWithRelations = z.infer<typeof bookWithRelationsArraySchema>;
+
+export async function loader(args: Route.LoaderArgs) {
+  const { context } = args;
+  const { userId } = await getAuth(args);
+
+  if (!userId) {
+    throw data("Must log in", { status: 401 });
+  }
+
+  const booksResult: BookWithRelations = await context.db
+    .select({
+      id: books.id,
+      title: books.title,
+      isbn: books.isbn,
+      pageCount: books.pageCount,
+      genres: sql<
+        { id: number; name: string }[]
+      >`json_group_array(json_object('id', ${genres.id}, 'name', ${genres.name}))`, // Aggregate genres
+      authors: sql<
+        { id: number; name: string }[]
+      >`json_group_array(json_object('id', ${authors.id}, 'name', ${authors.name}))`, // Aggregate authors
+      readCount: sql`count(${bookReads.id})`.mapWith(Number), // Count bookReads, explicitly mapping to a Number
+    })
+    .from(books)
+    .where(eq(books.userId, userId))
+    .leftJoin(bookGenres, eq(books.id, bookGenres.bookId))
+    .leftJoin(genres, eq(bookGenres.genreId, genres.id))
+    .leftJoin(bookAuthors, eq(books.id, bookAuthors.bookId))
+    .leftJoin(authors, eq(bookAuthors.authorId, authors.id))
+    .leftJoin(bookReads, eq(books.id, bookReads.bookId)) //left join for read count
+    .groupBy(books.id); // Group by book ID to aggregate correctly
+
+  const transformedBooks = booksResult.map((row) => ({
+    id: row.id,
+    title: row.title,
+    isbn: row.isbn,
+    pageCount: row.pageCount,
+    genres: JSON.parse(row.genres.toString()),
+    authors: JSON.parse(row.authors.toString()),
+    readCount: row.readCount,
+  }));
+
+  const validatedBooks =
+    bookWithRelationsArraySchema.safeParse(transformedBooks);
+
+  if (!validatedBooks.success) {
+    throw new Error(validatedBooks.error.message);
+  }
+
+  return { books: validatedBooks.data };
 }
 
 // export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {

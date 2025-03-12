@@ -1,5 +1,6 @@
 import { Form } from "react-router";
 import { InputField } from "./InputField";
+import type { Ref } from "react";
 
 type ActionData =
   | {
@@ -7,15 +8,21 @@ type ActionData =
     }
   | undefined;
 
+interface ReadingSessionModalProps {
+  onClose: () => void;
+  actionData?: any; // Replace 'any' with a more specific type if possible
+  nextPageStart: number;
+  bookReadId: number;
+  action?: string;
+}
+
 export function ReadingSessionModal({
   onClose,
   actionData,
   nextPageStart,
-}: {
-  onClose: () => void;
-  actionData: ActionData;
-  nextPageStart: number;
-}) {
+  bookReadId,
+  action,
+}: ReadingSessionModalProps) {
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-opacity-50 flex justify-center items-center">
       <Form
@@ -23,6 +30,7 @@ export function ReadingSessionModal({
         className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 w-full md:w-3/4 lg:w-1/2"
       >
         <input type="hidden" name="intent" value="add-reading-session" />
+        <input type="hidden" name="bookReadId" value={bookReadId} />
         <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">
           Add Reading Session
         </h2>

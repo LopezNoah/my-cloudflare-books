@@ -4,6 +4,7 @@ import * as schema from "~/database/schema";
 import type { Route } from "./+types";
 import { BookService } from "~/lib/BookService";
 import { z } from "zod";
+import { getAuth } from "@clerk/react-router/ssr.server";
 
 export async function loader({ context }: Route.LoaderArgs) {
   // Fetch all authors and genres for the dropdowns (if you add them later):
@@ -12,7 +13,14 @@ export async function loader({ context }: Route.LoaderArgs) {
   return { allAuthors, allGenres };
 }
 
-export async function action({ context, request }: Route.ActionArgs) {
+export async function action(args: Route.ActionArgs) {
+  const { context, request } = args;
+  const { userId } = await getAuth(args);
+
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
   const formData = await request.formData();
   const bookService = new BookService(context.db);
 
@@ -27,6 +35,7 @@ export async function action({ context, request }: Route.ActionArgs) {
       pageCount,
       genres,
       authors,
+      userId,
     });
 
     return redirect(`/books/${newBookId}`);

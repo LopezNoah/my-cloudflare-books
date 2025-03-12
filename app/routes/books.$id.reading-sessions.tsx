@@ -1,9 +1,10 @@
 import type { Route } from "./+types/books.$id.reading-sessions";
-import { Link, redirect } from "react-router";
+import { Link, redirect, data } from "react-router";
 import type { ReadingSession } from "~/database/schema";
 import { z } from "zod";
-import { BookService } from "~/lib/BookService";
+// import { BookService } from "~/lib/BookService";
 import type { BookWithRelations } from "~/lib/BookService";
+import { BookService, ReadingSessionService } from "~/database/services";
 
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
@@ -20,19 +21,22 @@ export async function loader({ params, context }: Route.LoaderArgs) {
   const bookId = parseInt(params.id || "0");
 
   if (isNaN(bookId)) {
-    throw new Response("Invalid Book ID", { status: 400 });
+    throw data("Invalid Book ID", { status: 400 });
   }
 
   const bookService = new BookService(context.db);
-  const book = await bookService.getBookWithRelations(bookId);
+  const readingSessionService = new ReadingSessionService(context.db);
+  const book = await bookService.getBookById(bookId);
 
   if (!book) {
-    throw new Response("Book not found", { status: 404 });
+    throw data("Book not found", { status: 404 });
   }
 
-  const readingSessions = await bookService.getReadingSessions(bookId);
+  const readingSessions = await readingSessionService.getSessionsForBookRead(
+    bookId
+  );
 
-  return { book, readingSessions } satisfies LoaderData;
+  return { book, readingSessions }; //satisfies LoaderData;
 }
 
 function ReadingSessionsList({
@@ -61,7 +65,7 @@ function ReadingSessionsList({
                   Start: {new Date(session.startTime).toLocaleDateString()},
                   Duration: {formatDuration(session.duration)}, Pages:{" "}
                   {session.pageStart}-{session.pageEnd}, Finished:{" "}
-                  {session.finishedBook ? "Yes" : "No"}
+                  {/* {session.finishedBook ? "Yes" : "No"} */}
                 </p>
               </Link>
             </li>
@@ -77,16 +81,14 @@ export default function BookReadingSessionsPage({
 }: Route.ComponentProps) {
   const { book, readingSessions } = loaderData;
 
-  const totalPagesRead = readingSessions.reduce((acc, session) => {
-    return (
-      acc + (session.pageEnd ? session.pageEnd - (session.pageStart || 0) : 0)
-    );
-  }, 0);
-
-  const totalDuration = readingSessions.reduce(
-    (acc, session) => acc + session.duration,
-    0
-  );
+  let totalPagesRead = 0;
+  let totalDuration = 0;
+  for (const session of readingSessions) {
+    if (session.pageEnd >= session.pageStart) {
+      totalPagesRead += session.pageEnd - session.pageStart + 1;
+    }
+    totalDuration += session.duration;
+  }
 
   const numSessions = readingSessions.length;
   const averagePagesPerSession =
