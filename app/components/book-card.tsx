@@ -9,15 +9,28 @@ import type {
   Genre,
 } from "~/database/schema";
 
-interface BookWithRelations extends Book {
-  bookAuthor: (BookAuthor & { author: Author })[];
-  bookGenre: (BookGenre & { genre: Genre })[];
-}
+type BookWithRelations = {
+  id: number;
+  title: string;
+  isbn: string | null;
+  pageCount: number;
+  genres: {
+    id: number;
+    name: string;
+  }[];
+  authors: {
+    id: number;
+    name: string;
+  }[];
+  readCount: number;
+};
+
 interface BookCardProps {
   book: BookWithRelations;
 }
 
 export function BookCard({ book }: BookCardProps) {
+  console.log(book);
   return (
     <Link to={`/books/${book.id}`} className="block relative">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition duration-200 ease-in-out group">
@@ -26,10 +39,10 @@ export function BookCard({ book }: BookCardProps) {
             {book.title}
           </h2>
           <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-            {book.bookAuthor.map((ba) => ba.author.name).join(", ")}
+            {book?.authors?.map((ba) => ba.name).join(", ")}
           </p>
           <p className="text-gray-600 dark:text-gray-400 text-sm mt-2">
-            {book.bookGenre.map((bg) => bg.genre.name).join(", ")}
+            {book.genres.map((bg) => bg.name).join(", ")}
           </p>
           {/* You can add a placeholder for the cover image here */}
           {/* <div className="mt-4 h-48 bg-gray-200 dark:bg-gray-700 rounded-md"></div>  Placeholder for cover */}
